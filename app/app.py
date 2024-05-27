@@ -1,14 +1,12 @@
 import os
 from dotenv import load_dotenv, find_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, request
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
-from langchain_openai import OpenAIEmbeddings
 
 load_dotenv(find_dotenv(), override=True)
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
-openai_api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 CORS(app)
