@@ -17,4 +17,4 @@ RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 EXPOSE 5000
 
 # Command to run the Flask application
-CMD ["python", "/app/app.py"]
+CMD ["python", "app/app.py"]
