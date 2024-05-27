@@ -1,26 +1,32 @@
 import os
 from dotenv import load_dotenv, find_dotenv
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
-from pinecone import Pinecone
+import pinecone
 
+# Load environment variables
 load_dotenv(find_dotenv(), override=True)
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 
+# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
+
+# Load the model once at startup
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+
+# Initialize Pinecone client once at startup
+pinecone.init(api_key=pinecone_api_key)
+index = pinecone.Index("huggingface")
 
 @app.route('/retrieve', methods=['GET'])
 def retrieve():
     question = request.args.get('question')
-    print("Got question: ", question)
-    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-    user_vector = model.encode(question).tolist()
-    print("User vector: ", user_vector)
+    if not question:
+        return jsonify({"error": "No question provided"}), 400
 
-    pc = Pinecone(api_key=pinecone_api_key)
-    index = pc.Index("huggingface")
+    user_vector = model.encode(question).tolist()
 
     response = index.query(
         namespace="ns1",
@@ -30,17 +36,14 @@ def retrieve():
         include_metadata=True
     )
 
-    print("Response: ", response)
-
-    matches = response['matches']
-    documents = [match['metadata']['content'] for match in matches] 
+    matches = response.get('matches', [])
+    documents = [match['metadata']['content'] for match in matches]
 
     formatted_documents = ""
-
     for i, doc in enumerate(documents, 1):
         formatted_documents += f"Chunk Reference {i}: {doc}\n"
 
     return formatted_documents, 200
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run()
