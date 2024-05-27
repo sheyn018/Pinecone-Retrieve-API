@@ -9,6 +9,9 @@ import pinecone
 load_dotenv(find_dotenv(), override=True)
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 
+# Render assigns the PORT environment variable
+port = int(os.getenv("PORT", 5000))  # Default to 5000 if not set
+
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
@@ -46,4 +49,4 @@ def retrieve():
     return formatted_documents, 200
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=False, host='0.0.0.0', port=port)
