@@ -1,35 +1,32 @@
 import os
 from dotenv import load_dotenv, find_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
-import pinecone
+from pinecone import Pinecone
 
 # Load environment variables
 load_dotenv(find_dotenv(), override=True)
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
+openai_api_key = os.getenv("OPENAI_API_KEY")
 
-# Render assigns the PORT environment variable
-port = int(os.getenv("PORT", 5000))  # Default to 5000 if not set
-
-# Initialize Flask app
+# Initialize Flask app and CORS
 app = Flask(__name__)
 CORS(app)
 
-# Load the model once at startup
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-
-# Initialize Pinecone client once at startup
-pinecone.init(api_key=pinecone_api_key)
-index = pinecone.Index("huggingface")
-
-@app.route('/', methods=['GET'])
+@app.route('/retrieve', methods=['GET'])
 def retrieve():
+    # Get the question from the request
     question = request.args.get('question')
-    if not question:
-        return jsonify({"error": "No question provided"}), 400
+    print("Got question: ", question)
 
+    # Encode the question into a vector using SentenceTransformer
+    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
     user_vector = model.encode(question).tolist()
+
+    # Initialize Pinecone and query the index
+    pc = Pinecone(api_key=pinecone_api_key)
+    index = pc.Index("huggingface")
 
     response = index.query(
         namespace="ns1",
@@ -39,14 +36,13 @@ def retrieve():
         include_metadata=True
     )
 
-    matches = response.get('matches', [])
+    # Extract and format the matched documents
+    matches = response['matches']
     documents = [match['metadata']['content'] for match in matches]
 
-    formatted_documents = ""
-    for i, doc in enumerate(documents, 1):
-        formatted_documents += f"Chunk Reference {i}: {doc}\n"
+    formatted_documents = "\n".join([f"Chunk Reference {i}: {doc}" for i, doc in enumerate(documents, 1)])
 
     return formatted_documents, 200
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=5000)
