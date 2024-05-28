@@ -23,7 +23,7 @@ model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 pinecone.init(api_key=pinecone_api_key)
 index = pinecone.Index("huggingface")
 
-@app.route('/retrieve', methods=['GET'])
+@app.route('/', methods=['GET'])
 def retrieve():
     question = request.args.get('question')
     if not question:
