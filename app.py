@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv, find_dotenv
-from flask import Flask, request
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
@@ -42,7 +42,8 @@ def retrieve():
 
     formatted_documents = "\n".join([f"Chunk Reference {i}: {doc}" for i, doc in enumerate(documents, 1)])
 
-    return formatted_documents, 200
+    # Return the JSON response with a label
+    return jsonify({'chunks': formatted_documents}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True)
