@@ -14,6 +14,9 @@ pinecone_api_key = os.getenv("PINECONE_API_KEY")
 app = Flask(__name__)
 CORS(app)
 
+# Load the SentenceTransformer model once
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+
 @app.route('/retrieve', methods=['GET'])
 def retrieve():
     # Get the question from the request
@@ -21,7 +24,6 @@ def retrieve():
     print("Got question: ", question)
 
     # Encode the question into a vector using SentenceTransformer
-    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
     user_vector = model.encode(question).tolist()
 
     # Initialize Pinecone and query the index
