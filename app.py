@@ -1,5 +1,4 @@
 import os
-import json
 from dotenv import load_dotenv, find_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -17,6 +16,10 @@ CORS(app)
 # Load the SentenceTransformer model once
 model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
+# Initialize Pinecone index once
+pc = Pinecone(api_key=pinecone_api_key)
+index = pc.Index("huggingface")
+
 @app.route('/retrieve', methods=['GET'])
 def retrieve():
     # Get the question from the request
@@ -25,10 +28,6 @@ def retrieve():
 
     # Encode the question into a vector using SentenceTransformer
     user_vector = model.encode(question).tolist()
-
-    # Initialize Pinecone and query the index
-    pc = Pinecone(api_key=pinecone_api_key)
-    index = pc.Index("huggingface")
 
     response = index.query(
         namespace="ns1",
