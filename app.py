@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv, find_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -15,7 +16,6 @@ CORS(app)
 
 # Load the SentenceTransformer model once
 model_path = "models/all-MiniLM-L6-v2"
-model = SentenceTransformer(model_path)
 
 # Initialize Pinecone index once
 pc = Pinecone(api_key=pinecone_api_key)
@@ -28,6 +28,7 @@ def retrieve():
     print("Got question: ", question)
 
     # Encode the question into a vector using SentenceTransformer
+    model = SentenceTransformer(model_path)
     user_vector = model.encode(question).tolist()
 
     response = index.query(
@@ -44,10 +45,11 @@ def retrieve():
     # Extract and format the score and content into a single list
     formatted_matches = [{'score': match['score'], 'content': match['metadata']['content']} for match in matches]
 
-    print("Matches: ", formatted_matches)
+    # Convert the formatted matches to a JSON string
+    formatted_matches_json = json.dumps({'chunks': formatted_matches})
 
     # Return the JSON response with a label
-    return jsonify({'chunks': formatted_matches}), 200
+    return jsonify({'chunks': formatted_matches_json}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
