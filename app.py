@@ -57,17 +57,17 @@ def retrieve():
         # Extract and format the matched documents
         matches = response['matches']
         
+        # Extract and format the matched documents
+        matches = response['matches']
+
         # Extract and format the score and content into a single list
         formatted_matches = [{'score': match['score'], 'content': match['metadata']['content']} for match in matches]
-
-        # Convert the formatted matches to a JSON string
-        formatted_matches_json = json.dumps({'chunks': formatted_matches})
 
         # Manual garbage collection
         gc.collect()
 
         # Return the JSON response with a label
-        return jsonify({'chunks': formatted_matches_json}), 200
+        return jsonify({'chunks': formatted_matches}), 200
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         return jsonify({'error': 'An error occurred, please try again later'}), 500
