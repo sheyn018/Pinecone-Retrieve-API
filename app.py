@@ -1,5 +1,4 @@
 import os
-import json
 from dotenv import load_dotenv, find_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -9,17 +8,11 @@ from pinecone import Pinecone
 # Load environment variables
 load_dotenv(find_dotenv(), override=True)
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
+openai_api_key = os.getenv("OPENAI_API_KEY")
 
 # Initialize Flask app and CORS
 app = Flask(__name__)
 CORS(app)
-
-# Load the SentenceTransformer model once
-model_path = "models/all-MiniLM-L6-v2"
-
-# Initialize Pinecone index once
-pc = Pinecone(api_key=pinecone_api_key)
-index = pc.Index("huggingface")
 
 @app.route('/retrieve', methods=['GET'])
 def retrieve():
@@ -28,8 +21,12 @@ def retrieve():
     print("Got question: ", question)
 
     # Encode the question into a vector using SentenceTransformer
-    model = SentenceTransformer(model_path)
+    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
     user_vector = model.encode(question).tolist()
+
+    # Initialize Pinecone and query the index
+    pc = Pinecone(api_key=pinecone_api_key)
+    index = pc.Index("huggingface")
 
     response = index.query(
         namespace="ns1",
@@ -42,14 +39,16 @@ def retrieve():
     # Extract and format the matched documents
     matches = response['matches']
     
-    # Extract and format the score and content into a single list
-    formatted_matches = [{'score': match['score'], 'content': match['metadata']['content']} for match in matches]
+    formatted_matches = [
+    f"Chunk Reference {i}: Score: {match['score']}, Content: {match['metadata']['content']}" 
+    for i, match in enumerate(matches, 1)
+    ]
 
-    # Convert the formatted matches to a JSON string
-    formatted_matches_json = json.dumps({'chunks': formatted_matches})
+    # Join the formatted matches into a single string with a newline separator
+    formatted_matches_str = "\n".join(formatted_matches)
 
     # Return the JSON response with a label
-    return jsonify({'chunks': formatted_matches_json}), 200
+    return jsonify({'chunks': formatted_matches_str}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
