@@ -39,7 +39,16 @@ def retrieve():
     try:
         # Get the question from the request
         question = request.args.get('question')
+        k = request.args.get('k', 4)
         logger.info(f"Got question: {question}")
+        logger.info(f"Got k: {k}")
+
+        # Strip unwanted characters and convert to int
+        try:
+            k = int(k.strip())
+        except ValueError:
+            k = 4  # Default value if conversion fails
+            logger.warning(f"Invalid value for k, defaulting to {k}")
 
         # Encode the question into a vector using the preloaded SentenceTransformer model
         model = get_model()
@@ -49,7 +58,7 @@ def retrieve():
         response = index.query(
             namespace="ns1",
             vector=user_vector,
-            top_k=4,
+            top_k=k,
             include_values=True,
             include_metadata=True
         )
