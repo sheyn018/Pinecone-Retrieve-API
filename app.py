@@ -37,11 +37,18 @@ index = pc.Index("huggingface")
 @app.route('/retrieve', methods=['GET'])
 def retrieve():
     try:
-        # Get the question from the request
+        # Get the question and namespace from the request
         question = request.args.get('question')
+        namespace = request.args.get('namespace')
         k = request.args.get('k', 4)
         logger.info(f"Got question: {question}")
+        logger.info(f"Got namespace: {namespace}")
         logger.info(f"Got k: {k}")
+
+        # Validate namespace
+        if not namespace:
+            logger.error("Namespace is required.")
+            return jsonify({'error': 'Namespace is required'}), 400
 
         # Strip unwanted characters and convert to int
         try:
@@ -54,18 +61,15 @@ def retrieve():
         model = get_model()
         user_vector = model.encode(question).tolist()
 
-        # Query the Pinecone index
+        # Query the Pinecone index with the dynamic namespace
         response = index.query(
-            namespace="ns1",
+            namespace=namespace,
             vector=user_vector,
             top_k=k,
             include_values=True,
             include_metadata=True
         )
 
-        # Extract and format the matched documents
-        matches = response['matches']
-        
         # Extract and format the matched documents
         matches = response['matches']
 
