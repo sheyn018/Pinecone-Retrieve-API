@@ -7,6 +7,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
+from pinecone.grpc import PineconeGRPC as test
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +34,19 @@ def get_model():
 # Initialize Pinecone and index once at startup
 pc = Pinecone(api_key=pinecone_api_key)
 index = pc.Index("huggingface")
+
+@app.route('/namespace', methods=['GET'])
+def list_namespaces():
+    try:
+        logger.info("Listing all namespaces")
+        index = pc.Index("huggingface")
+        namespaces = index.describe_index_stats()
+        namespace_names = list(namespaces['namespaces'].keys())
+        print(namespace_names)
+        return jsonify({'namespaces': namespace_names}), 200
+    except Exception as e:
+        logger.error(f"An error occurred while listing namespaces: {e}")
+        return jsonify({'error': 'An error occurred while listing namespaces, please try again later'}), 500
 
 @app.route('/retrieve', methods=['GET'])
 def retrieve():
