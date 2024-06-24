@@ -7,7 +7,8 @@ from dotenv import load_dotenv, find_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
-import pinecone
+from pinecone import Pinecone
+from pinecone.grpc import PineconeGRPC as test
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -31,9 +32,9 @@ def get_model():
         model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
     return model
 
-# Initialize Pinecone client and index once at startup
-pinecone.init(api_key=pinecone_api_key)
-index = pinecone.Index("huggingface")
+# Initialize Pinecone and index once at startup
+pc = Pinecone(api_key=pinecone_api_key)
+index = pc.Index("huggingface")
 
 def memory_usage():
     process = psutil.Process(os.getpid())
@@ -79,7 +80,7 @@ def retrieve():
         model = get_model()
         user_vector = model.encode(question).tolist()
 
-        # Query the Pinecone index with the dynamic namespace
+         # Query the Pinecone index with the dynamic namespace
         response = index.query(
             namespace=namespace,
             vector=user_vector,
