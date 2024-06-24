@@ -2,12 +2,12 @@ import os
 import json
 import gc
 import logging
+import psutil
 from dotenv import load_dotenv, find_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
-from pinecone import Pinecone
-from pinecone.grpc import PineconeGRPC as test
+import pinecone
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -31,18 +31,22 @@ def get_model():
         model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
     return model
 
-# Initialize Pinecone and index once at startup
-pc = Pinecone(api_key=pinecone_api_key)
-index = pc.Index("huggingface")
+# Initialize Pinecone client and index once at startup
+pinecone.init(api_key=pinecone_api_key)
+index = pinecone.Index("huggingface")
+
+def memory_usage():
+    process = psutil.Process(os.getpid())
+    mem_info = process.memory_info()
+    return mem_info.rss / (1024 ** 2)  # memory in MB
 
 @app.route('/namespace', methods=['GET'])
 def list_namespaces():
     try:
         logger.info("Listing all namespaces")
-        index = pc.Index("huggingface")
         namespaces = index.describe_index_stats()
         namespace_names = list(namespaces['namespaces'].keys())
-        print(namespace_names)
+        logger.info(f"Namespaces: {namespace_names}")
         return jsonify({'namespaces': namespace_names}), 200
     except Exception as e:
         logger.error(f"An error occurred while listing namespaces: {e}")
@@ -64,7 +68,7 @@ def retrieve():
             logger.error("Namespace is required.")
             return jsonify({'error': 'Namespace is required'}), 400
 
-        # Strip unwanted characters and convert to int
+        # Convert k to int and validate
         try:
             k = int(k.strip())
         except ValueError:
@@ -86,12 +90,14 @@ def retrieve():
 
         # Extract and format the matched documents
         matches = response['matches']
-
-        # Extract and format the score and content into a single list
         formatted_matches = [{'score': match['score'], 'content': match['metadata']['content']} for match in matches]
 
         # Manual garbage collection
         gc.collect()
+
+        # Log memory usage
+        mem_usage = memory_usage()
+        logger.info(f"Memory usage: {mem_usage} MB")
 
         # Return the JSON response with a label
         return jsonify({'chunks': formatted_matches}), 200
