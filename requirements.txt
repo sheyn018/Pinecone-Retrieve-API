@@ -5,3 +5,4 @@ pinecone-client
 python-dotenv
 flask-cors
 pinecone-client[grpc]
+psutil
