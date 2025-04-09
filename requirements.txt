@@ -1,8 +1,7 @@
 flask
 gunicorn
 sentence-transformers
-pinecone-client
 python-dotenv
 flask-cors
-pinecone-client[grpc]
+pinecone
 psutil

@@ -8,7 +8,6 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
-from pinecone.grpc import PineconeGRPC as test
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -71,7 +70,7 @@ def retrieve():
 
         # Convert k to int and validate
         try:
-            k = int(k.strip())
+            k = int(k)  # ✅ No need for `.strip()` since k is either a string or an int
         except ValueError:
             k = 4  # Default value if conversion fails
             logger.warning(f"Invalid value for k, defaulting to {k}")
